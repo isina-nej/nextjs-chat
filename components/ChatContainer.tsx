@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface Message {
   id: string;
@@ -15,84 +14,52 @@ interface Message {
   createdAt: string;
 }
 
-interface OnlineUser {
-  userId: string;
-  email: string;
-}
-
 interface ChatContainerProps {
   token: string;
   userEmail: string;
 }
 
 export default function ChatContainer({ token, userEmail }: ChatContainerProps) {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState('');
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
-  // بارگیری پیام‌های قدیمی
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await fetch('/api/messages', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch('/api/messages', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setMessages(data.data.messages);
-        }
-      } catch (error) {
-        console.error('Failed to fetch messages:', error);
-      } finally {
-        setLoading(false);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.data.messages || []);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMessages();
   }, [token]);
 
-  // اتصال به Socket.io
   useEffect(() => {
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL, {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
-
-    newSocket.on('connect', () => {
-      console.log('Connected to socket server');
-      newSocket.emit('user:join', token);
-    });
-
-    newSocket.on('message:new', (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-    });
-
-    newSocket.on('user:online', (data: { onlineUsers: OnlineUser[] }) => {
-      setOnlineUsers(data.onlineUsers);
-    });
-
-    newSocket.on('user:offline', (data: { onlineUsers: OnlineUser[] }) => {
-      setOnlineUsers(data.onlineUsers);
-    });
-
-    newSocket.on('error', (error: string) => {
-      console.error('Socket error:', error);
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
   }, [token]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,14 +68,71 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
       return;
     }
 
-    if (socket) {
-      socket.emit('message:send', {
-        content: content.trim() || undefined,
-        imageUrl: imageUrl || undefined,
+    setSending(true);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: content.trim() || undefined,
+          imageUrl: imageUrl || undefined,
+        }),
       });
 
-      setContent('');
-      setImageUrl(null);
+      if (response.ok) {
+        setContent('');
+        setImageUrl(null);
+        await fetchMessages();
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm('Delete this message?')) return;
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}/`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        await fetchMessages();
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!newContent.trim()) return;
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}/`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newContent }),
+      });
+
+      if (response.ok) {
+        setEditingId(null);
+        setEditContent('');
+        await fetchMessages();
+      }
+    } catch (error) {
+      console.error('Error updating message:', error);
     }
   };
 
@@ -130,121 +154,159 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
 
       if (response.ok) {
         const data = await response.json();
-        setImageUrl(data.data.imageUrl);
+        setImageUrl(data.data.url);
       }
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error('Error uploading image:', error);
     }
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">در حال بارگیری...</div>;
+    return <div className="text-center p-4">Loading...</div>;
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* ساید بار - کاربران آنلاین */}
-      <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-        <h2 className="font-bold text-lg mb-4">کاربران آنلاین ({onlineUsers.length})</h2>
-        <div className="space-y-2">
-          {onlineUsers.map((user) => (
-            <div key={user.userId} className="flex items-center gap-2 p-2 bg-green-50 rounded">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm">{user.email}</span>
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-400 mt-8">No messages yet</div>
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${
+                message.user.email === userEmail ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                className={`max-w-xs px-4 py-2 rounded-lg group relative ${
+                  message.user.email === userEmail
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-black'
+                }`}
+              >
+                {message.user.email !== userEmail && (
+                  <div className="text-xs font-bold mb-1">
+                    {message.user.name || message.user.email}
+                  </div>
+                )}
+
+                {editingId === message.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full px-2 py-1 rounded text-black"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          handleEditMessage(message.id, editContent)
+                        }
+                        className="bg-green-500 text-white text-xs px-2 py-1 rounded"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingId(null);
+                          setEditContent('');
+                        }}
+                        className="bg-gray-500 text-white text-xs px-2 py-1 rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {message.content && <p className="text-sm">{message.content}</p>}
+                    {message.imageUrl && (
+                      <img
+                        src={message.imageUrl}
+                        alt="Message"
+                        className="max-w-xs rounded mt-2"
+                      />
+                    )}
+                  </>
+                )}
+
+                <div className="text-xs mt-1 opacity-70">
+                  {new Date(message.createdAt).toLocaleTimeString()}
+                </div>
+
+                {message.user.email === userEmail && !editingId && (
+                  <div className="absolute -left-24 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingId(message.id);
+                        setEditContent(message.content || '');
+                      }}
+                      className="bg-yellow-500 text-white text-xs px-2 py-1 rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="bg-red-500 text-white text-xs px-2 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* اصلی - پیام‌ها */}
-      <div className="flex-1 flex flex-col">
-        {/* پیام‌ها */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              هیچ پیامی وجود ندارد
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.user.email === userEmail ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-xs ${
-                    message.user.email === userEmail
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-300 text-gray-900'
-                  } rounded-lg p-3`}
-                >
-                  {message.user.email !== userEmail && (
-                    <p className="text-xs font-semibold mb-1">{message.user.name || message.user.email}</p>
-                  )}
-                  {message.imageUrl && (
-                    <img
-                      src={message.imageUrl}
-                      alt="message-image"
-                      className="max-w-xs rounded mb-2"
-                    />
-                  )}
-                  {message.content && <p>{message.content}</p>}
-                  <p className="text-xs opacity-75 mt-1">
-                    {new Date(message.createdAt).toLocaleTimeString('fa-IR')}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* فرم ارسال */}
-        <form
-          onSubmit={handleSendMessage}
-          className="p-4 bg-white border-t border-gray-200"
-        >
-          {imageUrl && (
-            <div className="mb-3 relative">
-              <img
-                src={imageUrl}
-                alt="preview"
-                className="max-h-24 rounded"
-              />
-              <button
-                type="button"
-                onClick={() => setImageUrl(null)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          <div className="flex gap-2">
+      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 flex gap-2">
+        <div className="flex-1 flex gap-2">
+          <input
+            type="text"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Send message..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            disabled={sending}
+          />
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
-              type="text"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="پیام خود را بنویسید..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              disabled={sending}
             />
-            <label className="px-4 py-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300">
-              📎
-              <input
-                type="file"
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-            </label>
+            <span className="text-blue-500">📎</span>
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={sending || (!content.trim() && !imageUrl)}
+          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
+      </form>
+
+      {imageUrl && (
+        <div className="px-4 pb-4">
+          <div className="relative max-w-xs">
+            <img src={imageUrl} alt="Preview" className="rounded" />
             <button
-              type="submit"
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              type="button"
+              onClick={() => setImageUrl(null)}
+              className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
             >
-              ارسال
+              X
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

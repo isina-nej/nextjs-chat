@@ -1,5 +1,4 @@
 import { createServer } from 'http';
-import { initializeSocket } from '@/lib/socket';
 import next from 'next';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -13,9 +12,6 @@ app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     handle(req, res);
   });
-
-  // Initialize Socket.io
-  initializeSocket(httpServer);
 
   httpServer
     .once('error', (err) => {
