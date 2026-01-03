@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# سامانه چت بلادرنگ
 
-## Getting Started
+سیستم چت آنی (Real-time Chat) ساخت‌شده با **Next.js**، **PostgreSQL**، و **Socket.io** برای استفاده در برنامه‌های وب و ادغام در سایت‌های خارجی.
 
-First, run the development server:
+## ✨ ویژگی‌ها
+
+- ✅ **چت بلادرنگ** - پیام‌های آنی از طریق WebSocket
+- ✅ **احراز هویت** - ثبت‌نام و ورود امن
+- ✅ **آپلود تصاویر** - با فشرده‌سازی خودکار
+- ✅ **پنل مدیریت** - برای ادمین‌ها
+- ✅ **API عمومی** - برای ادغام در سایت‌های دیگر
+- ✅ **Widget** - برای نمایش در سایت‌های خارجی
+
+## 🚀 شروع کار
+
+### پیش‌نیازها
+
+- Node.js 18+
+- PostgreSQL 12+
+
+### نصب
+
+```bash
+npm install
+```
+
+### تنظیم دیتابیس
+
+```bash
+# ویرایش DATABASE_URL در .env
+npx prisma migrate dev --name init
+```
+
+### اجرای برنامه
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+برنامه در `http://localhost:3000` اجرا می‌شود.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📖 صفحات
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **صفحه اصلی**: `http://localhost:3000`
+- **ثبت‌نام**: `http://localhost:3000/auth/register`
+- **ورود**: `http://localhost:3000/auth/login`
+- **چت**: `http://localhost:3000/chat`
+- **پنل مدیریت**: `http://localhost:3000/admin`
 
-## Learn More
+## 🔌 API
 
-To learn more about Next.js, take a look at the following resources:
+### احراز هویت
+```bash
+POST /api/auth/register
+POST /api/auth/login
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### پیام‌ها
+```bash
+GET /api/messages
+POST /api/messages
+DELETE /api/messages/<id>
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### آپلود
+```bash
+POST /api/upload
+```
 
-## Deploy on Vercel
+### Widget
+```bash
+GET /api/widget/messages
+POST /api/widget/messages
+GET /api/widget/config
+GET /api/widget/script
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 ادغام Widget
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```html
+<script>
+  window.CHAT_WIDGET_API_KEY = 'your-api-key';
+</script>
+<script src="http://localhost:3000/api/widget/script"></script>
+```
+
+## 📝 ساختار پروژه
+
+```
+├── app/api/          # API routes
+├── app/auth/         # صفحات احراز هویت
+├── app/chat/         # صفحه چت
+├── app/admin/        # پنل مدیریت
+├── components/       # React components
+├── lib/              # Utilities
+└── prisma/           # Database schema
+```
+
+## 🚀 استقرار
+
+```bash
+npm run build
+npm run start
+```
+
+یا PM2:
+
+```bash
+pm2 start npm --name "chat" -- run start
+```
