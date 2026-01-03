@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { hashPassword, comparePasswords } from '@/lib/password';
 import { generateToken } from '@/lib/auth';
-import { isValidEmail, isValidPassword, errorResponse, successResponse } from '@/lib/utils';
+import { isValidEmail, isValidPassword, errorResponse, successResponse, isDatabaseConfigured } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {

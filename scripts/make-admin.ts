@@ -1,6 +1,7 @@
-import { prisma } from '../lib/db';
+import { getPrisma } from '../lib/db';
 
 async function makeAdmin() {
+  const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: { email: 'admin@example.com' },
   });

@@ -13,7 +13,7 @@ export function getPrisma(): PrismaClient {
 
     prismaInstance = globalForPrisma.prisma || new PrismaClient({ errorFormat: 'colorless' });
     if (!globalForPrisma.prisma) globalForPrisma.prisma = prismaInstance;
-    return prismaInstance;
+    return prismaInstance!;
   } catch (err) {
     console.error('Failed to load @prisma/client. Have you run `prisma generate`?\n', err);
     throw err;

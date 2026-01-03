@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
-import { errorResponse, successResponse } from '@/lib/utils';
+import { errorResponse, successResponse, isDatabaseConfigured } from '@/lib/utils';
 
 const MESSAGES_PER_PAGE = 50;
 
