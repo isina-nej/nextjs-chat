@@ -19,6 +19,17 @@ interface ChatContainerProps {
   userEmail: string;
 }
 
+function getRoleFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.role || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function ChatContainer({ token, userEmail }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState('');
@@ -28,6 +39,14 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (token) {
+      const r = getRoleFromToken(token);
+      setRole(r);
+    }
+  }, [token]);
 
   const fetchMessages = async () => {
     try {
@@ -249,9 +268,9 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
                   {new Date(message.createdAt).toLocaleTimeString()}
                 </div>
 
-                {message.user.email === userEmail && (
+                {(message.user.email === userEmail || role === 'ADMIN') && (
                   <div className="flex gap-1 mt-2">
-                    {editingId !== message.id && (
+                    {editingId !== message.id && message.user.email === userEmail && (
                       <>
                         <button
                           type="button"
@@ -265,19 +284,20 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
                         >
                           ✏️ Edit
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteMessage(message.id);
-                          }}
-                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
-                        >
-                          🗑️ Delete
-                        </button>
                       </>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteMessage(message.id);
+                      }}
+                      className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
+                    >
+                      🗑️ Delete
+                    </button>
                   </div>
                 )}
               </div>
