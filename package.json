@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "eslint",
-    "postinstall": "npx prisma generate"
+    "postinstall": "node ./scripts/postinstall-prisma.js"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
