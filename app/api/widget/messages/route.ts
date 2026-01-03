@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getPrisma } from '@/lib/db';
 import { errorResponse, successResponse } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const apiKey = request.headers.get('x-api-key');
 
     // در یک سیستم واقعی، API key باید در دیتابیس بررسی شود
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const apiKey = request.headers.get('x-api-key');
 
     if (!apiKey) {

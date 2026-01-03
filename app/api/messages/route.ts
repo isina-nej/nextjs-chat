@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getPrisma } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
 import { errorResponse, successResponse } from '@/lib/utils';
 
@@ -7,6 +7,7 @@ const MESSAGES_PER_PAGE = 50;
 
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 

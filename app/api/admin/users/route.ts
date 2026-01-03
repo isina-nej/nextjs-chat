@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getPrisma } from '@/lib/db';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
 import { errorResponse, successResponse } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
