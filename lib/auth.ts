@@ -20,7 +20,7 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
-export function extractTokenFromHeader(authHeader: string | undefined): string | null {
+export function extractTokenFromHeader(authHeader: string | null | undefined): string | null {
   if (!authHeader) return null;
   const parts = authHeader.split(' ');
   if (parts.length === 2 && parts[0] === 'Bearer') {

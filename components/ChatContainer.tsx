@@ -98,7 +98,7 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
     if (!confirm('Delete this message?')) return;
 
     try {
-      const response = await fetch(`/api/messages/${messageId}/`, {
+      const response = await fetch(`/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -106,10 +106,16 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
       });
 
       if (response.ok) {
+        console.log('Message deleted successfully');
         await fetchMessages();
+      } else {
+        const errorData = await response.json();
+        console.error('Delete failed:', response.status, errorData);
+        alert('Error deleting message: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error deleting message:', error);
+      alert('Error deleting message: ' + String(error));
     }
   };
 
@@ -117,7 +123,7 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
     if (!newContent.trim()) return;
 
     try {
-      const response = await fetch(`/api/messages/${messageId}/`, {
+      const response = await fetch(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -129,10 +135,16 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
       if (response.ok) {
         setEditingId(null);
         setEditContent('');
+        console.log('Message updated successfully');
         await fetchMessages();
+      } else {
+        const errorData = await response.json();
+        console.error('Edit failed:', response.status, errorData);
+        alert('Error updating message: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error updating message:', error);
+      alert('Error updating message: ' + String(error));
     }
   };
 
@@ -237,23 +249,35 @@ export default function ChatContainer({ token, userEmail }: ChatContainerProps) 
                   {new Date(message.createdAt).toLocaleTimeString()}
                 </div>
 
-                {message.user.email === userEmail && !editingId && (
-                  <div className="absolute -left-24 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                    <button
-                      onClick={() => {
-                        setEditingId(message.id);
-                        setEditContent(message.content || '');
-                      }}
-                      className="bg-yellow-500 text-white text-xs px-2 py-1 rounded"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMessage(message.id)}
-                      className="bg-red-500 text-white text-xs px-2 py-1 rounded"
-                    >
-                      Delete
-                    </button>
+                {message.user.email === userEmail && (
+                  <div className="flex gap-1 mt-2">
+                    {editingId !== message.id && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingId(message.id);
+                            setEditContent(message.content || '');
+                          }}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteMessage(message.id);
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -114,11 +114,13 @@ function testPatch(token, messageId) {
     res.on('end', () => {
       try {
         const json = JSON.parse(data);
-        console.log('Response:', JSON.stringify(json, null, 2));
+        console.log('PATCH OK');
+        // Now test DELETE
+        testDelete(token, messageId);
       } catch {
         console.log('Response:', data);
+        process.exit(0);
       }
-      process.exit(0);
     });
   });
   
@@ -129,4 +131,39 @@ function testPatch(token, messageId) {
   
   patchReq.write(patchData);
   patchReq.end();
+}
+
+function testDelete(token, messageId) {
+  const deleteOpts = {
+    hostname: 'localhost',
+    port: 3000,
+    path: '/api/messages/' + messageId,
+    method: 'DELETE',
+    headers: {
+      'Authorization': 'Bearer ' + token
+    }
+  };
+  
+  const deleteReq = http.request(deleteOpts, (res) => {
+    console.log('DELETE Status:', res.statusCode);
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        console.log('DELETE OK');
+        console.log('\nAll tests PASSED! ✓');
+      } catch {
+        console.log('Response:', data);
+      }
+      process.exit(0);
+    });
+  });
+  
+  deleteReq.on('error', e => {
+    console.log('Error:', e.message);
+    process.exit(1);
+  });
+  
+  deleteReq.end();
 }

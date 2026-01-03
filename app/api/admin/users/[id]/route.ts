@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { PrismaClient } from '@prisma/client';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
 import { errorResponse, successResponse } from '@/lib/utils';
 
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    errorFormat: 'colorless',
+  });
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
@@ -39,7 +48,7 @@ export async function POST(
       );
     }
 
-    const userId = params.id;
+    const userId = id;
     const { isActive } = await request.json();
 
     const updatedUser = await prisma.user.update({

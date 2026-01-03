@@ -17,6 +17,7 @@ interface Stats {
   activeUsers: number;
   totalMessages: number;
   messagesLastDay: number;
+  stats: Array<{ label: string; value: number }>;
 }
 
 export default function AdminPage() {

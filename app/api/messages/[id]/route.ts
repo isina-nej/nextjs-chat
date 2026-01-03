@@ -12,9 +12,11 @@ const prisma =
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
@@ -35,8 +37,15 @@ export async function DELETE(
 
     // URL سے message ID حاصل کریں
     const url = new URL(request.url);
-    const parts = url.pathname.split('/');
+    const parts = url.pathname.split('/').filter(Boolean);
     const messageId = parts[parts.length - 1];
+
+    if (!messageId) {
+      return NextResponse.json(
+        errorResponse('Message ID required'),
+        { status: 400 }
+      );
+    }
 
     // بررسی مالکیت پیام یا ادمین بودن کاربر
     const message = await prisma.message.findUnique({
@@ -63,12 +72,13 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      successResponse(null, 'پیام حذف شد')
+      successResponse(null, 'پیام حذف شد'),
+      { status: 200 }
     );
   } catch (error) {
     console.error('Delete message error:', error);
     return NextResponse.json(
-      errorResponse('Server error'),
+      errorResponse('Server error: ' + String(error).substring(0, 100)),
       { status: 500 }
     );
   }
@@ -76,9 +86,11 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
@@ -111,7 +123,7 @@ export async function PATCH(
 
     // URL سے message ID حاصل کریں
     const url = new URL(request.url);
-    const parts = url.pathname.split('/');
+    const parts = url.pathname.split('/').filter(Boolean);
     const messageId = parts[parts.length - 1];
     
     if (!messageId) {
