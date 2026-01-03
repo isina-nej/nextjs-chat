@@ -2,7 +2,7 @@ const http = require('http');
 
 // First register
 const registerOpts = {
-  hostname: 'localhost',
+  hostname: '127.0.0.1',
   port: 3000,
   path: '/api/auth/register',
   method: 'POST',
@@ -34,7 +34,7 @@ registerReq.end();
 
 function login() {
   const loginOpts = {
-    hostname: 'localhost',
+hostname: '127.0.0.1',
     port: 3000,
     path: '/api/auth/login',
     method: 'POST',
@@ -64,7 +64,7 @@ function login() {
 
 function sendMessage(token) {
   const postOpts = {
-    hostname: 'localhost',
+hostname: '127.0.0.1',
     port: 3000,
     path: '/api/messages',
     method: 'POST',
@@ -95,7 +95,7 @@ function sendMessage(token) {
 
 function testPatch(token, messageId) {
   const patchOpts = {
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port: 3000,
     path: '/api/messages/' + messageId,
     method: 'PATCH',
@@ -135,7 +135,7 @@ function testPatch(token, messageId) {
 
 function testDelete(token, messageId) {
   const deleteOpts = {
-    hostname: 'localhost',
+    hostname: '127.0.0.1',
     port: 3000,
     path: '/api/messages/' + messageId,
     method: 'DELETE',
