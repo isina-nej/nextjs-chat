@@ -29,3 +29,11 @@ export function errorResponse(error: string): ApiResponse {
     error,
   };
 }
+
+/**
+ * Check whether DATABASE_URL is configured.
+ * Returns true if configured, false otherwise.
+ */
+export function isDatabaseConfigured(): boolean {
+  return !!process.env.DATABASE_URL;
+}

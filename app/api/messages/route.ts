@@ -7,6 +7,14 @@ const MESSAGES_PER_PAGE = 50;
 
 export async function GET(request: NextRequest) {
   try {
+    if (!isDatabaseConfigured()) {
+      console.error('Get messages error: DATABASE_URL is not configured');
+      return NextResponse.json(
+        errorResponse('پیکربندی دیتابیس ناقص است. متغیر محیطی DATABASE_URL تنظیم نشده است.'),
+        { status: 503 }
+      );
+    }
+
     const prisma = getPrisma();
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);

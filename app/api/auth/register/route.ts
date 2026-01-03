@@ -6,6 +6,14 @@ import { isValidEmail, isValidPassword, errorResponse, successResponse } from '@
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isDatabaseConfigured()) {
+      console.error('Register error: DATABASE_URL is not configured');
+      return NextResponse.json(
+        errorResponse('پیکربندی دیتابیس ناقص است. متغیر محیطی DATABASE_URL تنظیم نشده است.'),
+        { status: 503 }
+      );
+    }
+
     const prisma = getPrisma();
     const body = await request.json();
     const { email, password } = body;
