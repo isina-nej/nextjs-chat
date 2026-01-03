@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "eslint",
-    "postinstall": "node scripts/ensure-prisma.js"
+    "postinstall": "node -e \"const fs=require('fs'); const { execSync } = require('child_process'); const schema='./prisma/schema.prisma'; if (fs.existsSync(schema)) { console.log('Found prisma schema, running generate...'); execSync('npx prisma generate --schema='+schema, { stdio: 'inherit' }); } else { console.warn('No prisma schema found, skipping prisma generate.'); }\""
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
