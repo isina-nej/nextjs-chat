@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "eslint",
-    "postinstall": "node -e \"const fs=require('fs'); const { execSync } = require('child_process'); const schema='./prisma/schema.prisma'; if (fs.existsSync(schema)) { console.log('Found prisma schema, running generate...'); execSync('npx prisma generate --schema='+schema, { stdio: 'inherit' }); } else { console.warn('No prisma schema found, skipping prisma generate.'); }\""
+    "postinstall": "node -e \"const fs=require('fs'); const { execSync } = require('child_process'); const schema='./prisma/schema.prisma'; const schemaContent = `generator client { provider = \"prisma-client-js\" }\n\n datasource db { provider = \"sqlite\" url = env(\"DATABASE_URL\") }\n\n model User { id String @id @default(cuid()) email String @unique password String name String? role String @default(\"USER\") isActive Boolean @default(true) messages Message[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt @@index([email]) }\n\n model Message { id String @id @default(cuid()) content String? imageUrl String? userId String user User @relation(fields: [userId], references: [id], onDelete: Cascade) createdAt DateTime @default(now()) @@index([userId]) @@index([createdAt]) }\n`; if (!fs.existsSync(schema)) { console.warn('Prisma schema not found; writing fallback schema.'); fs.mkdirSync('./prisma', { recursive: true }); fs.writeFileSync(schema, schemaContent); } console.log('Running prisma generate...'); execSync('npx prisma generate --schema='+schema, { stdio: 'inherit' });\""
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
